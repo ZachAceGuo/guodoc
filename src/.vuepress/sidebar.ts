@@ -3,24 +3,30 @@ import { sidebar } from "vuepress-theme-hope";
 export default sidebar({
   "/": [
     "",
-    "portfolio",
+    // "portfolio",
+    // {
+    //   text: "案例",
+    //   icon: "laptop-code",
+    //   prefix: "demo/",
+    //   link: "demo/",
+    //   children: "structure",
+    // },
+    // {
+    //   text: "文档",
+    //   icon: "book",
+    //   prefix: "guide/",
+    //   children: "structure",
+    // },
     {
-      text: "案例",
-      icon: "laptop-code",
-      prefix: "demo/",
-      link: "demo/",
-      children: "structure",
-    },
-    {
-      text: "文档",
+      text: "面试每日题目",
       icon: "book",
-      prefix: "guide/",
+      prefix: "mianshi/",
       children: "structure",
     },
-    {
-      text: "幻灯片",
-      icon: "person-chalkboard",
-      link: "https://ecosystem.vuejs.press/zh/plugins/markdown/revealjs/demo.html",
-    },
+    // {
+    //   text: "幻灯片",
+    //   icon: "person-chalkboard",
+    //   link: "https://ecosystem.vuejs.press/zh/plugins/markdown/revealjs/demo.html",
+    // },
   ],
 });

@@ -725,3 +725,110 @@ Spring 中 Bean 的加载流程可以概括为以下几个主要步骤：
 3、**配置** **`prefetch`** **参数**
 
 在 RabbitMQ 中，`prefetch` 使得每个消费者一次只处理一个消息，从而保证了消息的顺序性。
+
+### day12
+
+#### SpringCloud使用到了哪些组件
+
+Gateway，Nacos，OpenFeign，LoadBalancer（旧版本是Ribbon），阿里的Sentinel（旧版本是网飞公司的Histrix），Seata，还有RabbitMQ
+
+如果他们特别问到是组件的话，那就说：Seata，Sentinel，Redis，RabbitMQ，XXL-JOB，ES
+
+#### Spring，SpringBoot，SpringCloud的区别
+
+- Spring 是基础框架，提供了所有的核心功能。核心是 IoC（控制反转） 和 AOP（面向切面编程）
+- Spring Boot 是基于 Spring 的扩展，简化了应用的配置和部署，专注于单个应用的快速开发
+   - 自动装配：Spring Boot 可以自动配置应用程序所需的组件，减少配置工作。
+   - 内置服务器：Spring Boot 提供了内嵌的 Web 服务器（如 Tomcat、Jetty、Undertow）
+   - 简化配置：通过 `application.properties` 或 `application.yml` 文件，可以灵活配置应用程序，而不需要在 XML 文件中进行繁琐的配置。
+- Spring Cloud 是基于 Spring Boot 的微服务框架，专注在构建分布式系统和微服务架构。提供了对微服务生命周期、服务发现、配置管理、负载均衡、消息传递、熔断器等一系列功能的支持。
+
+#### Spring Cloud和Spring Cloud alibaba 有什么区别
+
+- **注册中心**: Spring Cloud 使用 Eureka 或 Consul，而 Spring Cloud Alibaba 推荐使用 Nacos。
+- **配置中心**: Spring Cloud 使用 Spring Cloud Config，Spring Cloud Alibaba 同样推荐使用 Nacos。
+- **网关**: Spring Cloud 使用 Zuul（逐渐被 Gateway 替代），Spring Cloud Alibaba 默认采用 Spring Cloud Gateway。
+- **负载均衡**: Spring Cloud 使用 Ribbon 和 LoadBalancer，Spring Cloud Alibaba 支持这些同时也兼容阿里巴巴的产品。
+- **熔断降级**: Spring Cloud 使用 Hystrix，而 Spring Cloud Alibaba 提供了 Sentinel 作为替代方案。
+- **服务调用**: Spring Cloud 使用 Feign，Spring Cloud Alibaba 支持 OpenFeign。
+- **分布式事务**: Spring Cloud 没有直接提供，通常依赖第三方方案如 2PC，而 Spring Cloud Alibaba 提供 Seata 解决方案。
+- **消息中间件**: Spring Cloud 可以集成 RabbitMQ 等第三方组件，Spring Cloud Alibaba 推荐使用 RocketMQ。
+- **分布式调度**: Spring Cloud 可能依赖外部工具如 xxl-job，而 Spring Cloud Alibaba 提供 SchedulerX。
+- **短信平台**: Spring Cloud 没有直接提供，Spring Cloud Alibaba 提供 Alibaba Cloud SMS。
+
+#### 负载均衡策略
+
+Ribbon或其它负载均衡器的的负载均衡策略有：
+
+**RoundRobinRule（轮询）**
+
+- 这是默认的负载均衡算法，按照顺序循环选择服务器。
+
+**RandomRule（随机）**
+
+- 随机选择一个服务器实例。
+
+**WeightedResponseTimeRule（加权响应时间）**
+
+- 根据每个服务器的平均响应时间计算权重，响应时间越长权重越小，被选中的几率也越小。
+
+**RetryRule（重试）**
+
+- 先按照 RoundRobinRule 获取服务实例，如果获取失败，则在指定的时间间隔内重试。
+
+#### Nacos服务注册与发现
+
+Nacos是一个服务注册与发现的组件，用在分布式微服务系统间作为注册中心。服务的注册与发现的流程如下：
+
+- 服务启动时就会注册自己的服务信息（服务名、IP、端口）到注册中心
+- 调用者可以从注册中心订阅想要的服务，获取服务对应的实例列表（1个服务可能多实例部署）
+- 调用者自己对实例列表负载均衡，挑选一个实例
+- 调用者向这个实例发起远程调用
+
+当服务提供者的实例宕机或者启动新实例时，调用者如何得知呢？
+
+- 服务提供者会定期向注册中心发送请求，报告自己的健康状态（心跳请求）
+- 当注册中心长时间收不到提供者的心跳时，会认为这个实例宕机，将其从服务的实例列表中剔除
+- 当服务有新实例启动时，会发送注册服务请求，其信息会被记录在注册中心的服务实例列表
+- 当注册中心服务列表变更时，会主动通知微服务，更新本地服务列表
+
+#### Nacos 心跳机制
+
+Nacos 通过**心跳机制**来实时监控服务实例的健康状态。当服务实例出现问题（如宕机、网络中断、负载过高）时，Nacos 会根据心跳超时规则快速发现并更新服务实例的状态。
+
+- 服务实例：启动后向 Nacos 注册自己，并周期性**每隔5秒**发送心跳信息到nacos。
+   - 心跳信息是使用http的put请求发送，包括：服务名称、IP、端口、集群名称、权重、是否为临时实例等
+- Nacos 服务端：接收心跳，如果 Nacos 在 **15 秒**内（也就是3 次心跳）没有收到心跳，将实例标记为 不健康。如果连续 **30 秒**（6 次心跳）未收到心跳，Nacos 将该实例从服务列表中 删除（Deregister）
+
+#### Gateway用来做什么
+
+**作用**：路由与鉴权，以外还有如下的一些作用：
+
+路由：路由是API网关很核心的模块功能，此模块实现根据请求，锁定目标微服务并将请求进行转发。
+
+限流：实现微服务访问流量计算，基于流量计算分析进行限流，可以定义多种限流规则。
+
+缓存：数据缓存。
+
+日志：日志记录。
+
+监控：记录请求响应数据，api耗时分析，性能监控。
+
+鉴权：权限身份认证。
+
+在网关怎么路由的； 回答配置 `routes `节点下配置 `id`、`uri`、`predicates`：
+
+```YAML
+spring:
+  application:
+    name: gateway
+  cloud:
+    nacos:
+      server-addr: 192.168.12.168:8848
+    gateway:
+      routes:
+        - id: item # 路由规则id，自定义，唯一
+          uri: lb://item-service # 路由的目标服务，lb代表负载均衡，会从注册中心拉取服务列表
+          predicates: # 路由断言，判断当前请求是否符合当前规则，符合则路由到目标服务
+            - Path=/items/**,/search/** # 这里是以请求路径作为判断规则
+```
